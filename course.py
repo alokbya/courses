@@ -15,7 +15,7 @@ url = "http://catalog.oregonstate.edu/CourseDetail.aspx?Columns=afghijklmnopqrst
 def to_url(ts):
     # Need to find a better way to handle the wierd way that the date is changed on the website.
     # For example, Fall 2018 has the value 201901
-
+    # Need to figure out when year is set ahead by one, and when behind
     year = int(ts[-2:])+1
     year = str(year)
     if ts[0] == 'S' or ts[0] == 's':
