@@ -40,10 +40,10 @@ def scrape_course(major="ME", class_num="451", term="W18"):
     f = urllib.request.urlopen(url)             # Fetch DOM at url
     soup = BeautifulSoup(f, "lxml")
     table = soup.find_all('table')[4]           # Table with class information
-    df = pd.read_html(str(table))
-    raw_list = df[0].to_json(orient='records')  # get data in JSON format
-    d = json.loads(raw_list)                    # convert raw_list to JSON object
-    print(d)
+    df = pd.read_html(str(table))               # Create pandas dataframe with html table
+    raw_list = df[0].to_json(orient='records')  # Get data in JSON format
+    d = json.loads(raw_list)                    # Convert raw_list to JSON object
+    
     # make a list for the class description
     class_title = soup.h3.contents[2].strip().split('\n')
     title = [i.strip() for i in class_title]                # e.g. ['ME 311', 'INTRODUCTION TO THERMAL-FLUID SCIENCES', '(4).']
@@ -58,31 +58,51 @@ def scrape_course(major="ME", class_num="451", term="W18"):
     # each class offered on the webpage contains its own dictionary with appropriate keys and values, regarding course information
     info = {}
     class_info = {}     # place holder
+    
     for each_json in range(len(d)):
         for each_title in range(len(head)):
             class_info[head[each_title]] = d[each_json][str(each_title)]
         info['Class ' + str(each_json)] = class_info
-
-    print(info)
+        class_info = {}
+    
     print('##########################################################')
-    return Course(major, class_num, term, info, soup, class_name)
+    return Course(major, class_num, term, info, class_name)
     
 class Course:
     """A simple class that stores and returns values from the Oregon State University course catalog"""
 
-    def __init__(self,major="ME", class_num="451", term="W18", data="", soup="Beautiful Soup 4", class_name=""):
+    def __init__(self,major="ME", class_num="451", term="W18", data="", class_name=""):
         self.major = major
         self.class_num = class_num
         self.term = term
         self.data = data
-        self.soup = soup
         self.class_name = class_name
 
+    # For all class methods, a try/except error handle needs to be implemented in the case that no data was scraped.
+    # This could be due to the user putting in the wrong term, or seeking a term that the course catalog has no information for.
+    
     def __str__(self):
         return self.class_name
 
     def get_data(self):
         return self.data['Class 0']['Type']
+
+    def get_dow(self, class_num="Class 1"):
+        times = self.data["Class 1"]["Day/Time/Date"]
+        print(self.data[class_num]["Day/Time/Date"][:3])
+            #print(self.data["Class " + str(i)]["Term"])
+
+    def get_tod(self, class_num="Class 1"):
+        print(self.data[class_num]["Day/Time/Date"][3:12])
+
+    def get_classes(self):
+        print(self.class_name + "\n")
+        print("There are " + str(len(self.data) - 1) + " available classes during " + self.term +  ": \n")
+        for i in self.data:
+            if i == "Class 0":
+                pass
+            else:
+                print(i + ": " + self.data[i]["Type"] + "\t " + self.data[i]["Instructor"] + "\t " + self.data[i]["Day/Time/Date"][:3] + "\t " + self.data[i]["Day/Time/Date"][3:12])
 
     def get_clean_info(self):
         print('\n')
@@ -93,6 +113,7 @@ class Course:
         return '\n'
 
 if __name__ == "__main__":
-    c = scrape_course('ME', '451', 'F18')
-    print(c)
+    c = scrape_course('ME', '311', 'Sp18')
+    #print(c)
     #print(c.get_clean_info())
+    c.get_classes()
