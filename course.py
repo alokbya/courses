@@ -28,6 +28,33 @@ def to_url(ts):
         
     return year
 
+def get_data(url):
+    f = urllib.request.urlopen(url)             # Fetch DOM at url
+    soup = BeautifulSoup(f, "lxml")
+    table = soup.find_all('table')[4]           # Table with class information
+    df = pd.read_html(str(table))               # Create pandas dataframe with html table
+    raw_list = df[0].to_json(orient='records')  # Get data in JSON format
+    d = json.loads(raw_list)                    # Convert raw_list to JSON object
+    head = [d[0][(str(i))] for i in range(len(d[0]))]
+    return d, soup, head
+
+def get_class_name(soup):
+    class_title = soup.h3.contents[2].strip().split('\n')
+    title = [i.strip() for i in class_title]                # e.g. ['ME 311', 'INTRODUCTION TO THERMAL-FLUID SCIENCES', '(4).']
+    class_name = str(title[0] + ': ' + title[1]).replace('.', '')
+    return class_name
+
+def get_dict(d, head):
+    info = {}
+    class_info = {}     # place holder
+    
+    for each_json in range(len(d)):
+        for each_title in range(len(head)):
+            class_info[head[each_title]] = d[each_json][str(each_title)]
+        info['Class ' + str(each_json)] = class_info
+        class_info = {}
+    return info
+
 def scrape_course(major="ME", class_num="451", term="W18"):
     """A function to scrape the Oregon State University 'General Catalog & Schedule of Classes'. All of the relevant data
     is stored in tables on the webpage. The data is sifted through to find course information, and then a dictionary is created
@@ -37,35 +64,23 @@ def scrape_course(major="ME", class_num="451", term="W18"):
 
     # get a json object with all of the relevant course information from the HTML table on the webpage
     url = "http://catalog.oregonstate.edu/CourseDetail.aspx?subjectcode={}&coursenumber={}&term={}".format(major, class_num, to_url(term))    # define url
-    f = urllib.request.urlopen(url)             # Fetch DOM at url
-    soup = BeautifulSoup(f, "lxml")
-    table = soup.find_all('table')[4]           # Table with class information
-    df = pd.read_html(str(table))               # Create pandas dataframe with html table
-    raw_list = df[0].to_json(orient='records')  # Get data in JSON format
-    d = json.loads(raw_list)                    # Convert raw_list to JSON object
     
-    # make a list for the class description
-    class_title = soup.h3.contents[2].strip().split('\n')
-    title = [i.strip() for i in class_title]                # e.g. ['ME 311', 'INTRODUCTION TO THERMAL-FLUID SCIENCES', '(4).']
-    class_name = str(title[0] + ': ' + title[1]).replace('.', '')
+    # get table data from webpage
+    data = get_data(url)   
+
+    # assign data to variable           
+    d = data[0]
+
+    # assign class name to variable
+    class_name = data[1]
     
     # make a list of the headers
-    head = [d[0][(str(i))] for i in range(len(d[0]))]
+    head = data[2]
 
-    # create a dictionary with correct key, value pairs
-    # dictionary should contain sub-dictionaries with class listings
-    # info is a dictionary that contains all of the class information
-    # each class offered on the webpage contains its own dictionary with appropriate keys and values, regarding course information
-    info = {}
-    class_info = {}     # place holder
+    # dictionary to hold course data
+    info = get_dict(d, head)
     
-    for each_json in range(len(d)):
-        for each_title in range(len(head)):
-            class_info[head[each_title]] = d[each_json][str(each_title)]
-        info['Class ' + str(each_json)] = class_info
-        class_info = {}
     
-    print('##########################################################')
     return Course(major, class_num, term, info, class_name)
     
 class Course:
@@ -96,24 +111,19 @@ class Course:
         print(self.data[class_num]["Day/Time/Date"][3:12])
 
     def get_classes(self):
-        print(self.class_name + "\n")
+        
         print("There are " + str(len(self.data) - 1) + " available classes during " + self.term +  ": \n")
+        
         for i in self.data:
             if i == "Class 0":
                 pass
             else:
                 print(i + ": " + self.data[i]["Type"] + "\t " + self.data[i]["Instructor"] + "\t " + self.data[i]["Day/Time/Date"][:3] + "\t " + self.data[i]["Day/Time/Date"][3:12])
-
-    def get_clean_info(self):
-        print('\n')
-        print('Instructor' + '\t' + 'Date/Time' + 3*'\t' + 'Lec/Lab' + 2*'\t' + 'Section')
-        print('\n')
-        for i in range(0, len(self.data)):
-            print(self.data['Class ' + str(i)]['Instructor'] +'\t' + self.data['Class ' + str(i)]['Day/Time/Date'] + '\t' + self.data['Class ' + str(i)]['Type'] + '\t' + self.data['Class ' + str(i)]['Sec'])
-        return '\n'
+    
 
 if __name__ == "__main__":
-    c = scrape_course('ME', '311', 'Sp18')
+
+    c = scrape_course('ME', '311', 'F18')
     #print(c)
     #print(c.get_clean_info())
     c.get_classes()

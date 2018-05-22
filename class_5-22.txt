@@ -1,0 +1,15 @@
+Monte Carlo Integration
+
+pick a random point
+find out if they are underneath or above the function line
+the area of the curve is equal to:
+    (the number of points inside/the number of points over)*area
+
+
+Take aways:
+
+    Use subprocesses
+
+    Wrap things up in classes: hide the gnarly code
+
+    Monte Carlo gives a good appx
