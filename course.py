@@ -61,8 +61,7 @@ def scrape_course(major="ME", class_num="451", term="W18"):
     to hold the data, and it is passed to a Course object.
     This function returns the Course object with all of the relevant course data from the OSU webpage.
     """
-
-    # get a json object with all of the relevant course information from the HTML table on the webpage
+    
     url = "http://catalog.oregonstate.edu/CourseDetail.aspx?subjectcode={}&coursenumber={}&term={}".format(major, class_num, to_url(term))    # define url
     
     # get table data from webpage
