@@ -8,6 +8,7 @@ import urllib
 import pandas as pd
 import requests
 import json
+from omit_labs import omit
 
 
 url = "http://catalog.oregonstate.edu/CourseDetail.aspx?Columns=afghijklmnopqrstuvwyz{&SubjectCode=ME&CourseNumber=451&Term=202000"
@@ -16,7 +17,7 @@ def to_url(ts):
     # Need to find a better way to handle the wierd way that the date is changed on the website.
     # For example, Fall 2018 has the value 201901
     # Need to figure out when year is set ahead by one, and when behind
-    year = int(ts[-2:])+1
+    year = int(ts[-2:])
     year = str(year)
     if ts[0] == 'S' or ts[0] == 's':
         if ts[1] == 'u' or ts[1] == 'U':    # summer term e.g. '201801'
@@ -25,18 +26,31 @@ def to_url(ts):
     if ts[0] == 'F' or ts[0] == 'f':
         return '20' + year + '01'           # fall term e.g. '201801'
     return '20' + year + '02'               # winter term e.g. '201802'
-        
-    return year
+
 
 def get_data(url):
     f = urllib.request.urlopen(url)             # Fetch DOM at url
     soup = BeautifulSoup(f, "lxml")
-    table = soup.find_all('table')[4]           # Table with class information
-    df = pd.read_html(str(table))               # Create pandas dataframe with html table
-    raw_list = df[0].to_json(orient='records')  # Get data in JSON format
-    d = json.loads(raw_list)                    # Convert raw_list to JSON object
-    head = [d[0][(str(i))] for i in range(len(d[0]))]
-    return d, soup, head
+    nt = pd.read_html(url, header=0)            # get number of tables
+
+    # find the table with 22 columns (contains course data)
+    table_num = 0                               # holds the table number with 22 columns
+    class_bit = False                           # false unless there are classes offered for specified term
+    for i in range(len(nt)):
+        try:
+            if len(nt[i].columns) == 22:
+                table_num = i
+                class_bit = True
+        except:
+            pass
+    if class_bit:
+        table = soup.find_all('table')[table_num]   # Table with class information
+        df = pd.read_html(str(table))               # Create pandas dataframe with html table               
+        raw_list = df[0].to_json(orient='records')  # Get data in JSON format
+        d = json.loads(raw_list)                    # Convert raw_list to JSON object
+        head = [d[0][(str(i))] for i in range(len(d[0]))]
+        return d, soup, head
+    return False
 
 def get_class_name(soup):
     class_title = soup.h3.contents[2].strip().split('\n')
@@ -61,17 +75,20 @@ def scrape_course(major="ME", class_num="451", term="W18"):
     to hold the data, and it is passed to a Course object.
     This function returns the Course object with all of the relevant course data from the OSU webpage.
     """
-    
+
     url = "http://catalog.oregonstate.edu/CourseDetail.aspx?subjectcode={}&coursenumber={}&term={}".format(major, class_num, to_url(term))    # define url
     
     # get table data from webpage
     data = get_data(url)   
+    if data == False:
+        return 'No classes offered during the specified time.'
+
 
     # assign data to variable           
     d = data[0]
 
     # assign class name to variable
-    class_name = data[1]
+    class_name = get_class_name(data[1])
     
     # make a list of the headers
     head = data[2]
@@ -96,33 +113,28 @@ class Course:
     # This could be due to the user putting in the wrong term, or seeking a term that the course catalog has no information for.
     
     def __str__(self):
-        return self.class_name
+        print(self.class_name + '\n')
+        # print("There are " + str(len(self.data) - 1) + " available classes during " + self.term +  ": \n")
+        omit(self.data)
+        return ''
 
-    def get_data(self):
-        return self.data['Class 0']['Type']
+    # def get_data(self):
+    #     return self.data['Class 0']['Type']
 
-    def get_dow(self, class_num="Class 1"):
-        times = self.data["Class 1"]["Day/Time/Date"]
-        print(self.data[class_num]["Day/Time/Date"][:3])
-            #print(self.data["Class " + str(i)]["Term"])
+    # def get_dow(self, class_num="Class 1"):
+    #     times = self.data["Class 1"]["Day/Time/Date"]
+    #     print(self.data[class_num]["Day/Time/Date"][:3])
+    #         #print(self.data["Class " + str(i)]["Term"])
 
-    def get_tod(self, class_num="Class 1"):
-        print(self.data[class_num]["Day/Time/Date"][3:12])
+    # def get_tod(self, class_num="Class 1"):
+    #     print(self.data[class_num]["Day/Time/Date"][3:12])
 
-    def get_classes(self):
-        
-        print("There are " + str(len(self.data) - 1) + " available classes during " + self.term +  ": \n")
-        
-        for i in self.data:
-            if i == "Class 0":
-                pass
-            else:
-                print(i + ": " + self.data[i]["Type"] + "\t " + self.data[i]["Instructor"] + "\t " + self.data[i]["Day/Time/Date"][:3] + "\t " + self.data[i]["Day/Time/Date"][3:12])
     
+        
 
 if __name__ == "__main__":
 
-    c = scrape_course('ME', '311', 'F18')
-    #print(c)
+    c = scrape_course('ME', '451', 'W19')
+    print(c)
     #print(c.get_clean_info())
-    c.get_classes()
+    #c.get_classes()
