@@ -16,7 +16,7 @@ url = "http://catalog.oregonstate.edu/CourseDetail.aspx?Columns=afghijklmnopqrst
 def to_url(ts):
     # properly generate the course url
     # this mainly handles the odd term dates used on the website
-    
+
     terms = {
         'su': '00',
         'f': '01',
@@ -32,8 +32,6 @@ def to_url(ts):
     
     return '20' + str(year) + terms[term]
     
-
-
 def get_data(url):
     f = urllib.request.urlopen(url)             # Fetch DOM at url
     soup = BeautifulSoup(f, "lxml")
