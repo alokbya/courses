@@ -115,12 +115,8 @@ class Course:
         omit(self.data)
         return ''
 
-    
-        
-
 if __name__ == "__main__":
 
-    c = scrape_course('ME', '451', 'F18')
+    c = scrape_course('ME', '498', 'Sp18')
     print(c)
-    #print(c.get_clean_info())
-    #c.get_classes()
+    

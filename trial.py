@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-
+"""
+This file is only for trying things out before I implement them into courses.py
+"""
 import pandas as pd
 from course import *
 url = "http://catalog.oregonstate.edu/CourseDetail.aspx?Columns=afghijklmnopqrstuvwyz{&SubjectCode=ME&CourseNumber=498&Term=201802"
