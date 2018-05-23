@@ -14,18 +14,24 @@ from omit_labs import omit
 url = "http://catalog.oregonstate.edu/CourseDetail.aspx?Columns=afghijklmnopqrstuvwyz{&SubjectCode=ME&CourseNumber=451&Term=202000"
 
 def to_url(ts):
-    # Need to find a better way to handle the wierd way that the date is changed on the website.
-    # For example, Fall 2018 has the value 201901
-    # Need to figure out when year is set ahead by one, and when behind
+    # properly generate the course url
+    # this mainly handles the odd term dates used on the website
+    
+    terms = {
+        'su': '00',
+        'f': '01',
+        'w': '02',
+        'sp': '03'
+    }
+
     year = int(ts[-2:])
-    year = str(year)
-    if ts[0] == 'S' or ts[0] == 's':
-        if ts[1] == 'u' or ts[1] == 'U':    # summer term e.g. '201801'
-            return '20' + year + '00'
-        return '20' + year + '03'           # spring term e.g. '201803'
-    if ts[0] == 'F' or ts[0] == 'f':
-        return '20' + year + '01'           # fall term e.g. '201801'
-    return '20' + year + '02'               # winter term e.g. '201802'
+    term = ts[:-2].lower()
+    
+    if term == 'su' or term == 'f':
+        year+=1
+    
+    return '20' + str(year) + terms[term]
+    
 
 
 def get_data(url):
@@ -97,44 +103,26 @@ def scrape_course(major="ME", class_num="451", term="W18"):
     info = get_dict(d, head)
     
     
-    return Course(major, class_num, term, info, class_name)
+    return Course(info, class_name)
     
 class Course:
     """A simple class that stores and returns values from the Oregon State University course catalog"""
 
-    def __init__(self,major="ME", class_num="451", term="W18", data="", class_name=""):
-        self.major = major
-        self.class_num = class_num
-        self.term = term
+    def __init__(self, data="", class_name=""):
         self.data = data
         self.class_name = class_name
 
-    # For all class methods, a try/except error handle needs to be implemented in the case that no data was scraped.
-    # This could be due to the user putting in the wrong term, or seeking a term that the course catalog has no information for.
-    
     def __str__(self):
         print(self.class_name + '\n')
-        # print("There are " + str(len(self.data) - 1) + " available classes during " + self.term +  ": \n")
         omit(self.data)
         return ''
-
-    # def get_data(self):
-    #     return self.data['Class 0']['Type']
-
-    # def get_dow(self, class_num="Class 1"):
-    #     times = self.data["Class 1"]["Day/Time/Date"]
-    #     print(self.data[class_num]["Day/Time/Date"][:3])
-    #         #print(self.data["Class " + str(i)]["Term"])
-
-    # def get_tod(self, class_num="Class 1"):
-    #     print(self.data[class_num]["Day/Time/Date"][3:12])
 
     
         
 
 if __name__ == "__main__":
 
-    c = scrape_course('ME', '451', 'W19')
+    c = scrape_course('ME', '451', 'F18')
     print(c)
     #print(c.get_clean_info())
     #c.get_classes()
