@@ -10,9 +10,6 @@ import requests
 import json
 from omit_labs import omit
 
-
-url = "http://catalog.oregonstate.edu/CourseDetail.aspx?Columns=afghijklmnopqrstuvwyz{&SubjectCode=ME&CourseNumber=451&Term=202000"
-
 def to_url(ts):
     # properly generate the course url
     # this mainly handles the odd term dates used on the website
@@ -23,32 +20,32 @@ def to_url(ts):
         'w': '02',
         'sp': '03'
     }
-
     year = int(ts[-2:])
     term = ts[:-2].lower()
-    
     if term == 'su' or term == 'f':
         year+=1
-    
     return '20' + str(year) + terms[term]
     
 def get_data(url):
     f = urllib.request.urlopen(url)             # Fetch DOM at url
-    soup = BeautifulSoup(f, "lxml")
-    nt = pd.read_html(url, header=0)            # get number of tables
+    soup = BeautifulSoup(f, "lxml")             # Create soup object
+    nt = pd.read_html(url, header=0)            # Get number of tables
 
     # find the table with 22 columns (contains course data)
-    table_num = 0                               # holds the table number with 22 columns
-    class_bit = False                           # false unless there are classes offered for specified term
+    table_num = 0                               # Holds the table number with 22 columns
+    class_bit = False                           # False unless there are classes offered for specified term
+    
+    # check each table in nt for column length
     for i in range(len(nt)):
         try:
+            # if this table has 22 columns, record its index in nt
             if len(nt[i].columns) == 22:
                 table_num = i
                 class_bit = True
         except:
             pass
-    if class_bit:
-        table = soup.find_all('table')[table_num]   # Table with class information
+    if class_bit:                                   # If there is a course available
+        table = soup.find_all('table')[table_num]   # Table with course information
         df = pd.read_html(str(table))               # Create pandas dataframe with html table               
         raw_list = df[0].to_json(orient='records')  # Get data in JSON format
         d = json.loads(raw_list)                    # Convert raw_list to JSON object
@@ -84,9 +81,9 @@ def scrape_course(major="ME", class_num="451", term="W18"):
     
     # get table data from webpage
     data = get_data(url)   
+    # if there is no course available break out of function
     if data == False:
         return 'No classes offered during the specified time.'
-
 
     # assign data to variable           
     d = data[0]
@@ -100,7 +97,6 @@ def scrape_course(major="ME", class_num="451", term="W18"):
     # dictionary to hold course data
     info = get_dict(d, head)
     
-    
     return Course(info, class_name)
     
 class Course:
@@ -111,12 +107,11 @@ class Course:
         self.class_name = class_name
 
     def __str__(self):
-        print(self.class_name + '\n')
+        print('\n' + self.class_name + '\n')
         omit(self.data)
         return ''
 
 if __name__ == "__main__":
-
     c = scrape_course('ME', '498', 'Sp18')
     print(c)
     
