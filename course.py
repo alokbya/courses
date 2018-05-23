@@ -106,7 +106,7 @@ def scrape_course(major="ME", class_num="451", term="W18"):
 class Course:
     """A simple class that stores and returns values from the Oregon State University course catalog"""
 
-    def __init__(self, data="", class_name=""):
+    def __init__(self, data, class_name):
         self.data = data
         self.class_name = class_name
 
