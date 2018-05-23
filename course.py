@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# Alaaddin Alokby
+# Lab 6
+# 5/23/2018
 # Sources:
 # 1. https://www.crummy.com/software/BeautifulSoup/bs4/doc/
 
